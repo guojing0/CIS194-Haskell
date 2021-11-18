@@ -22,8 +22,13 @@ sumDigits (x:xs) = sum (toDigits x) + sumDigits xs
 validate :: Integer -> Bool
 validate n = (sumDigits $ doubleEveryOther $ toDigits n) `mod` 10 == 0
 
+type Peg = String
+type Move = (Peg, Peg)
+hanoi :: Integer -> Peg -> Peg -> Peg -> [Move]
+hanoi 0 _ _ _ = []
+hanoi n a b c = hanoi (n - 1) a c b ++ [(a,b)] ++ hanoi (n - 1) c b a
+
+
 main :: IO()
 main = do
-  print $ validate 4012888888881881
-  print $ validate 4012888888881882
-  
+  print $ hanoi 4 "a" "b" "c"
