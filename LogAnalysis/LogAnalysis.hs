@@ -8,7 +8,7 @@ parseMessage :: String -> LogMessage
 parseMessage xs = case firstElt of
                     "I" -> LogMessage Info secondElt (unwords restMsg)
                     "W" -> LogMessage Warning secondElt (unwords restMsg)
-                    "E" -> LogMessage (Error secondElt) (read (restMsg !! 0) :: Int) (unwords $ drop 1 restMsg)
+                    "E" -> LogMessage (Error secondElt) (read (head restMsg) :: Int) (unwords $ drop 1 restMsg)
                     _   -> Unknown xs
     where wordedList = words xs
           firstElt   = head wordedList
@@ -31,7 +31,7 @@ build (x:xs) = insert x (build xs)
 
 inOrder :: MessageTree -> [LogMessage]
 inOrder Leaf = []
-inOrder (Node leftTree msg rightTree) = (inOrder leftTree) ++ [msg] ++ (inOrder rightTree)
+inOrder (Node leftTree msg rightTree) = inOrder leftTree ++ [msg] ++ inOrder rightTree
 
 whatWentWrong :: [LogMessage] -> [String]
 whatWentWrong xs = [ msg | (LogMessage (Error num) _ msg) <- inOrder (build xs), num > 50]

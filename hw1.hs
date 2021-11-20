@@ -9,7 +9,7 @@ toDigitsRev n
 
 doubleEveryOtherHelper :: [Integer] -> [Integer]
 doubleEveryOtherHelper [] = []
-doubleEveryOtherHelper (x:[]) = [x]
+doubleEveryOtherHelper [x] = [x]
 doubleEveryOtherHelper (x:y:zs) = x : 2 * y : doubleEveryOtherHelper zs
 
 doubleEveryOther :: [Integer] -> [Integer]
