@@ -2,29 +2,32 @@
 
 module Calc where
 
-import ExprT
+import qualified ExprT as E
 import Parser
-import StackVM
+import qualified StackVM as S
 
-eval :: ExprT -> Integer
-eval (ExprT.Lit n) = n
-eval (ExprT.Add a b) = eval a + eval b
-eval (ExprT.Mul a b) = eval a * eval b
+import qualified Data.Map as M
+import Control.Applicative
+
+eval :: E.ExprT -> Integer
+eval (E.Lit n) = n
+eval (E.Add a b) = eval a + eval b
+eval (E.Mul a b) = eval a * eval b
 
 evalStr :: String -> Maybe Integer
-evalStr = fmap eval . parseExp ExprT.Lit ExprT.Add ExprT.Mul
+evalStr = fmap eval . parseExp E.Lit E.Add E.Mul
 
 class Expr a where
     lit :: Integer -> a
     add :: a -> a -> a
     mul :: a -> a -> a
 
-instance Expr ExprT where
-    lit = ExprT.Lit
-    add = ExprT.Add
-    mul = ExprT.Mul
+instance Expr E.ExprT where
+    lit = E.Lit
+    add = E.Add
+    mul = E.Mul
 
-reify :: ExprT -> ExprT
+reify :: E.ExprT -> E.ExprT
 reify = id
 
 newtype MinMax = MinMax Integer deriving (Eq, Show)
@@ -58,13 +61,43 @@ testBool = testExp :: Maybe Bool
 testMM = testExp :: Maybe MinMax
 testSat = testExp :: Maybe Mod7
 
-instance Expr StackVM.Program where
-    lit n = [PushI n]
-    add a b = a ++ b ++ [StackVM.Add]
-    mul a b = a ++ b ++ [StackVM.Mul]
+instance Expr S.Program where
+    lit n = [S.PushI n]
+    add a b = a ++ b ++ [S.Add]
+    mul a b = a ++ b ++ [S.Mul]
 
-compile :: String -> Maybe Program
+compile :: String -> Maybe S.Program
 compile = parseExp lit add mul
 
-runVM :: String -> Either String StackVM.StackVal
-runVM = maybe (Left "Parse Error") StackVM.stackVM . compile
+runVM :: String -> Either String S.StackVal
+runVM = maybe (Left "Parse Error") S.stackVM . compile
+
+class HasVars a where
+    var :: String -> a
+
+data VarExprT = Lit Integer
+              | Add VarExprT VarExprT
+              | Mul VarExprT VarExprT
+              | Var String
+  deriving (Show, Eq)
+
+instance Expr VarExprT where
+    lit = Lit
+    add = Add
+    mul = Mul
+
+instance HasVars VarExprT where
+    var = Var
+
+instance HasVars (M.Map String Integer -> Maybe Integer) where
+    var = M.lookup
+
+instance Expr (M.Map String Integer -> Maybe Integer) where
+    lit a = const $ Just  a
+    add a b = liftA2 (+) <$> a <*> b
+    mul a b = liftA2 (*) <$> a <*> b
+
+withVars :: [(String, Integer)]
+         -> (M.Map String Integer -> Maybe Integer)
+         -> Maybe Integer
+withVars vs exp = exp $ M.fromList vs
